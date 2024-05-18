@@ -7,7 +7,7 @@ async function connectToDataBase() {
         console.log('Успешное подключение к базе MongoDB!')
     } catch(err) {
         console.log('Ошибка при подключении к базе MongoDB :(');
-        console.error(error);
+        console.error(err);
     }
 };
 

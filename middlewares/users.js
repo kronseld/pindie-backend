@@ -1,7 +1,8 @@
 const user = require('../models/user');
+const bcrypt = require('bcryptjs');
 
 const findAllUsers = async (req, res, next) => {
-    req.usersArray = await user.find({});
+    req.usersArray = await user.find({}, { password: 0 });
     next();
 }
 
@@ -70,17 +71,41 @@ const checkEmptyNameAndEmail = async (req, res, next) => {
     }
   };
 
-  const checkIsUserExists = async (req, res, next) => {
-    const isInArray = req.usersArray.find((user) => {
-      return req.body.name === user.name;
-    });
-    if (isInArray) {
-      res.setHeader("Content-Type", "application/json");
-      res.status(400).send(JSON.stringify({ message: "Пользователь с таким именем уже существует!" }));
-    } else {
-      next();
-    }
+const checkIsUserExists = async (req, res, next) => {
+  const isInArray = req.usersArray.find((user) => {
+    return req.body.username === user.username;
+  });
+  if (isInArray) {
+    res.setHeader("Content-Type", "application/json");
+    res.status(400).send(JSON.stringify({ message: "Пользователь с таким именем уже существует!" }));
+  } else {
+    next();
+  }
 };
+
+const checkIsUserExistsWhenUpd = async (req, res, next) => {
+  req.usersArray = await user.find({});
+  const isInArray = req.usersArray.find((user) => {
+    return req.body.username === user.username && req.params.id !== user.id;
+  });
+  if (isInArray) {
+    res.setHeader("Content-Type", "application/json");
+    res.status(400).send(JSON.stringify({ message: "Пользователь с таким именем уже существует!" }));
+  } else {
+    next();
+  }
+};
+
+const hashPassword = async (req, res, next) => {
+  try {
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(req.body.password, salt);
+    req.body.password = hash;
+    next();
+  } catch (error) {
+    res.status(400).send({ message: "Ошибка хеширования пароля" });
+  }
+}; 
 
 module.exports = { 
     findAllUsers, 
@@ -90,5 +115,7 @@ module.exports = {
     deleteUser, 
     checkEmptyNameAndEmail,
     checkEmptyNameAndEmailAndPass,
-    checkIsUserExists
+    checkIsUserExists,
+    checkIsUserExistsWhenUpd,
+    hashPassword
 };
